@@ -12,8 +12,9 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 
-resource "google_compute_instance" "confidential_instance" {
-  name             = "vm"
+resource "google_compute_instance" "vm" {
+  count         = 2
+  name = "vm-${count.index}"
   zone = "europe-west1-b"
   machine_type     = "n2d-standard-2"
 
@@ -52,3 +53,19 @@ resource "google_sql_database_instance" "main" {
 
 
 
+resource "google_dns_record_set" "frontend" {
+  name = "vm.${google_dns_managed_zone.prod.dns_name}"
+  type = "A"
+  ttl  = 300
+
+  managed_zone = google_dns_managed_zone.prod.name
+
+  rrdatas = google_compute_instance.vm[*].network_interface[0].access_config[0].nat_ip
+}
+
+
+
+resource "google_dns_managed_zone" "prod" {
+  name     = "prod-zone"
+  dns_name = "prod.mydomain.com."
+}
